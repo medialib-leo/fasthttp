@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/valyala/bytebufferpool"
@@ -71,6 +72,11 @@ type Response struct {
 	//
 	// Copying Header by value is forbidden. Use pointer to Header instead.
 	Header ResponseHeader
+
+	// nanoseconds
+	StartTime  uint64
+	HeaderTime uint64
+	BodyTime   uint64
 
 	// Flush headers as soon as possible without waiting for first body bytes.
 	// Relevant for bodyStream only.
@@ -1208,6 +1214,7 @@ func (resp *Response) ReadLimitBody(r *bufio.Reader, maxBodySize int) error {
 	if err != nil {
 		return err
 	}
+	atomic.StoreUint64(&resp.HeaderTime, uint64(time.Now().UnixNano()))
 	if resp.Header.StatusCode() == StatusContinue {
 		// Read the next response according to http://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html .
 		if err = resp.Header.Read(r); err != nil {
@@ -1222,6 +1229,7 @@ func (resp *Response) ReadLimitBody(r *bufio.Reader, maxBodySize int) error {
 		if err != nil {
 			return err
 		}
+		atomic.StoreUint64(&resp.BodyTime, uint64(time.Now().UnixNano()))
 		resp.Header.SetContentLength(len(bodyBuf.B))
 	}
 	return nil

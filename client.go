@@ -1364,6 +1364,7 @@ func (c *HostClient) doNonNilReqResp(req *Request, resp *Response) (bool, error)
 	// backing up SkipBody in case it was set explicitly
 	customSkipBody := resp.SkipBody
 	resp.Reset()
+	atomic.StoreUint64(&resp.StartTime, uint64(time.Now().UnixNano()))
 	resp.SkipBody = customSkipBody
 
 	req.URI().DisablePathNormalizing = c.DisablePathNormalizing
